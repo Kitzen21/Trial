@@ -1,0 +1,61 @@
+Step 1: Install Dependencies
+
+Run this first in Colab:
+
+!pip install numpy matplotlib scikit-learn scipy
+Step 2: Simulate TRNG Bit Sequences
+
+
+
+import numpy as np
+
+def generate_trng_bits(num_devices=20, length=1000):
+    devices = []
+    
+    for i in range(num_devices):
+        if i < int(0.8 * num_devices):
+            # Normal TRNG (good randomness)
+            bits = np.random.randint(0, 2, length)
+        else:
+            # Faulty TRNG (biased or patterned)
+            bits = np.random.choice([0, 1], size=length, p=[0.8, 0.2])
+        
+        devices.append(bits)
+    
+    return np.array(devices)
+
+devices = generate_trng_bits()
+print("Shape:", devices.shape)
+Step 3: Statistical Randomness Tests
+
+
+from scipy.stats import entropy
+
+def randomness_features(devices):
+    features = []
+    
+    for bits in devices:
+        ones = np.sum(bits)
+        zeros = len(bits) - ones
+        
+        # Frequency test
+        freq = abs(ones - zeros) / len(bits)
+        
+        # Entropy
+        prob = [zeros/len(bits), ones/len(bits)]
+        ent = entropy(prob, base=2)
+        
+        features.append([freq, ent])
+    
+    return np.array(features)
+
+features = randomness_features(devices)
+print(features[:5])
+Step 4: Detect Anomalies (Isolation Forest)
+from sklearn.ensemble import IsolationForest
+
+model = IsolationForest(contamination=0.2, random_state=42)
+preds = model.fit_predict(features)
+
+# -1 = anomaly, 1 = normal
+print("Predictions:", preds)
